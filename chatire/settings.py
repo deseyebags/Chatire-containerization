@@ -156,9 +156,15 @@ REST_FRAMEWORK = {
 # django-cors-header Configuration
 CORS_ORIGIN_ALLOW_ALL = True
 
+# Celery settings 
+CELERY_TASK_ALWAYS_EAGER = True
+
 # notifications settings
+# NOTIFICATIONS_CHANNELS = {
+#     'websocket': 'notifications.channels.WebSocketChannel'
+# }
 NOTIFICATIONS_CHANNELS = {
-    'websocket': 'notifications.channels.WebSocketChannel'
+   'websocket': 'chat.channels.BroadCastWebSocketChannel'
 }
 
 # djangorestframework-jwt settings

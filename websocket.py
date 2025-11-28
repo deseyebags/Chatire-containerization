@@ -1,6 +1,7 @@
 """Receive messages over from RabbitMQ and send them over the websocket."""
 
 import sys
+import os
 
 import pika
 import uwsgi
@@ -8,9 +9,23 @@ import uwsgi
 
 def application(env, start_response):
     """Setup the Websocket Server and read messages off the queue."""
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='localhost')
+    # connection = pika.BlockingConnection(
+    #     pika.ConnectionParameters(host='localhost')
+    # )
+    host = os.environ.get("RABBITMQ_HOST", "rabbitmq")
+    port = int(os.environ.get("RABBITMQ_PORT", "5672"))
+    user = os.environ.get("RABBITMQ_DEFAULT_USER", "guest")
+    password = os.environ.get("RABBITMQ_DEFAULT_PASS", "guest")
+
+    credentials = pika.PlainCredentials(user, password)
+    params = pika.ConnectionParameters(
+        host=host,
+        port=port,
+        credentials=credentials,
+        heartbeat=600,
+        blocked_connection_timeout=300,
     )
+    connection = pika.BlockingConnection(params)
     channel = connection.channel()
 
     exchange = env['PATH_INFO'].replace('/', '')
@@ -30,18 +45,27 @@ def application(env, start_response):
         env.get('HTTP_ORIGIN', '')
     )
 
+    # def keepalive():
+    #     """Keep the websocket connection alive (called every 30 seconds)."""
+    #     print('PING/PONG...')
+    #     try:
+    #         uwsgi.websocket_recv_nb()
+    #         # connection.add_timeout(30, keepalive)
+    #         connection = pika.SelectConnection(params)
+    #         connection.add_timeout(30, keepalive)
+    #     except OSError as error:
+    #         print(error)
+    #         sys.exit(1) # Kill process and force uWSGI to Respawn
+
+    # keepalive()
+
+    def on_open(connection):
+        connection.ioloop.add_timeout(30, keepalive) 
+
     def keepalive():
-        """Keep the websocket connection alive (called every 30 seconds)."""
-        print('PING/PONG...')
-        try:
-            uwsgi.websocket_recv_nb()
-            connection.add_timeout(30, keepalive)
-        except OSError as error:
-            print(error)
-            sys.exit(1) # Kill process and force uWSGI to Respawn
-
-    keepalive()
-
+        # your keepalive logic
+        connection.ioloop.add_timeout(30, keepalive) 
+    connection = pika.SelectConnection(params, on_open_callback=on_open)
     while True:
         for method_frame, _, body in channel.consume(queue_name):
             try:

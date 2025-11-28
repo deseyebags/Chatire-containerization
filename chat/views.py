@@ -96,8 +96,7 @@ class ChatSessionMessageView(APIView):
             'obj': chat_session_message.id,
             'short_description': 'You a new message', 'silent': True,
             'extra_data': {
-                notifs_settings.NOTIFICATIONS_WEBSOCKET_URL_PARAM:
-                chat_session.uri,
+                'uri': chat_session.uri, 
                 'message': chat_session_message.to_json()
             }
         }
