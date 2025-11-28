@@ -1,7 +1,8 @@
 """Notification channels for django-notifs."""
 
 from json import dumps
-
+import os
+import logging
 import pika
 
 from notifications.channels import BaseNotificationChannel
@@ -12,9 +13,23 @@ class BroadCastWebSocketChannel(BaseNotificationChannel):
 
     def _connect(self):
         """Connect to the RabbitMQ server."""
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost')
+        # connection = pika.BlockingConnection(
+        #     pika.ConnectionParameters(host='localhost')
+        # )
+        host = os.environ.get("RABBITMQ_HOST", "rabbitmq")
+        port = int(os.environ.get("RABBITMQ_PORT", "5672"))
+        user = os.environ.get("RABBITMQ_DEFAULT_USER", "guest")
+        password = os.environ.get("RABBITMQ_DEFAULT_PASS", "guest")
+
+        credentials = pika.PlainCredentials(user, password)
+        params = pika.ConnectionParameters(
+            host=host,
+            port=port,
+            credentials=credentials,
+            heartbeat=600,
+            blocked_connection_timeout=300,
         )
+        connection = pika.BlockingConnection(params)
         channel = connection.channel()
 
         return connection, channel

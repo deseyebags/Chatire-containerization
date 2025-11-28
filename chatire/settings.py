@@ -50,8 +50,12 @@ INSTALLED_APPS = [
 
     # Our apps
     'chat',
-    'notifications'
+    'notifications',
 ]
+
+MIGRATION_MODULES = {
+    "notifications": None,
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -92,16 +96,12 @@ ASGI_APPLICATION = 'chatire.asgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    },
-    'channels_postgres': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'password',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'chatire'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
+        'HOST': os.environ.get('DB_HOST', 'postgres'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -136,7 +136,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
@@ -169,15 +169,28 @@ JWT_AUTH = {
 
 # django-channels
 ASGI_APPLICATION = 'chatire.asgi.application'
+import os
+
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_postgres.core.PostgresChannelLayer',
-        'CONFIG': {
-            'NAME': 'postgres',
-            'USER': 'postgres',
-            'PASSWORD': 'password',
-            'HOST': '127.0.0.1',
-            'PORT': '5432',
-        }
-    }
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
 }
+
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_postgres.core.PostgresChannelLayer',
+#         'CONFIG': {
+#             "database": os.environ.get("DB_NAME", "chatire"),
+#             "user": os.environ.get("DB_USER", "postgres"),
+#             "password": os.environ.get("DB_PASSWORD", "password"),
+#             "host": os.environ.get("DB_HOST", "postgres"),
+#             "port": os.environ.get("DB_PORT", "5432"),
+#             "symmetric_encryption_keys": [],  # required for security
+#         }
+#     }
+# }
+
